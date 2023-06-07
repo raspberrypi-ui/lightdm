@@ -1,0 +1,56 @@
+diff --git a/src/seat.c b/src/seat.c
+index 4c0149b..c16e460 100644
+--- a/src/seat.c
++++ b/src/seat.c
+@@ -68,6 +68,9 @@ struct SeatPrivate
+ 
+     /* The greeter to be started to replace the current one */
+     GreeterSession *replacement_greeter;
++
++    /* TRUE before the display server has successfully started */
++    gboolean starting;
+ };
+ 
+ static void seat_logger_iface_init (LoggerInterface *iface);
+@@ -433,6 +436,13 @@ display_server_stopped_cb (DisplayServer *display_server, Seat *seat)
+ {
+     l_debug (seat, "Display server stopped");
+ 
++    if (seat->priv->starting)
++    {
++        l_debug (seat, "Failed to start display server - trying to restart");
++        start_display_server (seat, display_server);
++        return;
++    }
++
+     /* Run a script right after stopping the display server */
+     const gchar *script = seat_get_string_property (seat, "display-stopped-script");
+     if (script)
+@@ -1281,6 +1291,7 @@ static void
+ display_server_ready_cb (DisplayServer *display_server, Seat *seat)
+ {
+     /* Run setup script */
++    seat->priv->starting = FALSE;
+     const gchar *script = seat_get_string_property (seat, "display-setup-script");
+     if (script && !run_script (seat, display_server, script, NULL))
+     {
+@@ -1649,6 +1660,7 @@ seat_real_start (Seat *seat)
+ 
+             DisplayServer *display_server = create_display_server (seat, session);
+             session_set_display_server (session, display_server);
++            seat->priv->starting = TRUE;
+             if (!display_server || !start_display_server (seat, display_server))
+             {
+                 l_debug (seat, "Can't create display server for automatic login");
+diff --git a/src/x-server-local.c b/src/x-server-local.c
+index 80e0ab0..694da52 100644
+--- a/src/x-server-local.c
++++ b/src/x-server-local.c
+@@ -417,7 +417,6 @@ x_server_local_start (DisplayServer *display_server)
+ {
+     XServerLocal *server = X_SERVER_LOCAL (display_server);
+ 
+-    g_return_val_if_fail (server->priv->x_server_process == NULL, FALSE);
+ 
+     server->priv->got_signal = FALSE;
+ 
