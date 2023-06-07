@@ -989,6 +989,14 @@ create_user_session (Seat *seat, const gchar *username, gboolean autostart)
 
     if (!session_name)
         session_name = seat_get_string_property (seat, "user-session");
+
+    const char *fallback_test = seat_get_string_property (seat, "fallback-test");
+    const char *fallback_session = seat_get_string_property (seat, "fallback-session");
+    if (fallback_test && fallback_session)
+    {
+        if (!system (fallback_test)) session_name = seat_get_string_property (seat, "fallback-session");
+    }
+
     g_autofree gchar *sessions_dir = config_get_string (config_get_instance (), "LightDM", "sessions-directory");
     g_autoptr(SessionConfig) session_config = find_session_config (seat, sessions_dir, session_name);
     if (!session_config)
