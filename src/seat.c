@@ -539,7 +539,12 @@ static void
 set_greeter_hints (Seat *seat, Greeter *greeter)
 {
     greeter_clear_hints (greeter);
-    greeter_set_hint (greeter, "default-session", seat_get_string_property (seat, "user-session"));
+    const char *fallback_test = seat_get_string_property (seat, "fallback-test");
+    const char *fallback_session = seat_get_string_property (seat, "fallback-session");
+    if (fallback_test && fallback_session && !system (fallback_test))
+        greeter_set_hint (greeter, "default-session", seat_get_string_property (seat, "fallback-session"));
+    else
+        greeter_set_hint (greeter, "default-session", seat_get_string_property (seat, "user-session"));
     greeter_set_hint (greeter, "hide-users", seat_get_boolean_property (seat, "greeter-hide-users") ? "true" : "false");
     greeter_set_hint (greeter, "show-manual-login", seat_get_boolean_property (seat, "greeter-show-manual-login") ? "true" : "false");
     greeter_set_hint (greeter, "show-remote-login", seat_get_boolean_property (seat, "greeter-show-remote-login") ? "true" : "false");
@@ -992,10 +997,7 @@ create_user_session (Seat *seat, const gchar *username, gboolean autostart)
 
     const char *fallback_test = seat_get_string_property (seat, "fallback-test");
     const char *fallback_session = seat_get_string_property (seat, "fallback-session");
-    if (fallback_test && fallback_session)
-    {
-        if (!system (fallback_test)) session_name = seat_get_string_property (seat, "fallback-session");
-    }
+    if (fallback_test && fallback_session && !system (fallback_test)) session_name = seat_get_string_property (seat, "fallback-session");
 
     g_autofree gchar *sessions_dir = config_get_string (config_get_instance (), "LightDM", "sessions-directory");
     g_autoptr(SessionConfig) session_config = find_session_config (seat, sessions_dir, session_name);
@@ -1037,6 +1039,11 @@ create_guest_session (Seat *seat, const gchar *session_name)
         session_name = seat_get_string_property (seat, "guest-session");
     if (!session_name)
         session_name = seat_get_string_property (seat, "user-session");
+
+    const char *fallback_test = seat_get_string_property (seat, "fallback-test");
+    const char *fallback_session = seat_get_string_property (seat, "fallback-session");
+    if (fallback_test && fallback_session && !system (fallback_test)) session_name = seat_get_string_property (seat, "fallback-session");
+
     g_autofree gchar *sessions_dir = config_get_string (config_get_instance (), "LightDM", "sessions-directory");
     g_autoptr(SessionConfig) session_config = find_session_config (seat, sessions_dir, session_name);
     if (!session_config)
@@ -1141,10 +1148,7 @@ greeter_start_session_cb (Greeter *greeter, SessionType type, const gchar *sessi
 
         const char *fallback_test = seat_get_string_property (seat, "fallback-test");
         const char *fallback_session = seat_get_string_property (seat, "fallback-session");
-        if (fallback_test && fallback_session)
-        {
-            if (!system (fallback_test)) session_name = seat_get_string_property (seat, "fallback-session");
-        }
+        if (fallback_test && fallback_session && !system (fallback_test)) session_name = seat_get_string_property (seat, "fallback-session");
 
         if (user)
             user_set_xsession (session_get_user (session), session_name);
@@ -1279,6 +1283,12 @@ create_greeter_session (Seat *seat)
     const gchar *autologin_session = seat_get_string_property (seat, "autologin-session");
     if (g_strcmp0 (autologin_session, "") == 0)
         autologin_session = NULL;
+    if (autologin_session)
+    {
+        const char *fallback_test = seat_get_string_property (seat, "fallback-test");
+        const char *fallback_session = seat_get_string_property (seat, "fallback-session");
+        if (fallback_test && fallback_session && !system (fallback_test)) autologin_session = seat_get_string_property (seat, "fallback-session");
+    }
     int autologin_timeout = seat_get_integer_property (seat, "autologin-user-timeout");
     gboolean autologin_guest = seat_get_boolean_property (seat, "autologin-guest");
     if (autologin_timeout > 0)
