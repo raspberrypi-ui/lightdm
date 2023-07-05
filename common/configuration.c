@@ -389,6 +389,9 @@ config_init (Configuration *config)
     g_hash_table_insert (config->priv->seat_keys, "autologin-in-background", GINT_TO_POINTER (KEY_SUPPORTED));
     g_hash_table_insert (config->priv->seat_keys, "autologin-session", GINT_TO_POINTER (KEY_SUPPORTED));
     g_hash_table_insert (config->priv->seat_keys, "exit-on-failure", GINT_TO_POINTER (KEY_SUPPORTED));
+    g_hash_table_insert (config->priv->seat_keys, "fallback-test", GINT_TO_POINTER (KEY_SUPPORTED));
+    g_hash_table_insert (config->priv->seat_keys, "fallback-session", GINT_TO_POINTER (KEY_SUPPORTED));
+    g_hash_table_insert (config->priv->seat_keys, "fallback-greeter", GINT_TO_POINTER (KEY_SUPPORTED));
     g_hash_table_insert (config->priv->seat_keys, "xdg-seat", GINT_TO_POINTER (KEY_DEPRECATED));
 
     g_hash_table_insert (config->priv->xdmcp_keys, "enabled", GINT_TO_POINTER (KEY_SUPPORTED));

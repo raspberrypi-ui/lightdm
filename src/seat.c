@@ -1138,6 +1138,14 @@ greeter_start_session_cb (Greeter *greeter, SessionType type, const gchar *sessi
 
         if (!session_name)
             session_name = seat_get_string_property (seat, "user-session");
+
+        const char *fallback_test = seat_get_string_property (seat, "fallback-test");
+        const char *fallback_session = seat_get_string_property (seat, "fallback-session");
+        if (fallback_test && fallback_session)
+        {
+            if (!system (fallback_test)) session_name = seat_get_string_property (seat, "fallback-session");
+        }
+
         if (user)
             user_set_xsession (session_get_user (session), session_name);
 
@@ -1209,7 +1217,16 @@ create_greeter_session (Seat *seat)
     l_debug (seat, "Creating greeter session");
 
     g_autofree gchar *sessions_dir = config_get_string (config_get_instance (), "LightDM", "greeters-directory");
-    g_autoptr(SessionConfig) session_config = find_session_config (seat, sessions_dir, seat_get_string_property (seat, "greeter-session"));
+
+    const char *greeter_sname = seat_get_string_property (seat, "greeter-session");
+    const char *fallback_test = seat_get_string_property (seat, "fallback-test");
+    const char *fallback_session = seat_get_string_property (seat, "fallback-greeter");
+    if (fallback_test && fallback_session)
+    {
+        if (!system (fallback_test)) greeter_sname = fallback_session;
+    }
+
+    g_autoptr(SessionConfig) session_config = find_session_config (seat, sessions_dir, greeter_sname);
     if (!session_config)
         return NULL;
 
